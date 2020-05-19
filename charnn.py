@@ -30,7 +30,6 @@ def char_maps(text: str):
     for idx, l in enumerate(text_set):
         char_to_idx[l] = idx
         idx_to_char[idx] = l
-
     # ========================
     return char_to_idx, idx_to_char
 
@@ -75,7 +74,7 @@ def chars_to_onehot(text: str, char_to_idx: dict) -> Tensor:
     # ====== YOUR CODE: ======
     result = torch.zeros((len(text), len(char_to_idx)), dtype=torch.int8)
     for idx, l in enumerate(text):
-        result[idx, char_to_idx[l]] = 1
+        result[idx][char_to_idx[l]] = 1
     # ========================
     return result
 
@@ -96,11 +95,6 @@ def onehot_to_chars(embedded_text: Tensor, idx_to_char: dict) -> str:
     for line in embedded_text:
         index = torch.argmax(line).item()
         result += idx_to_char[index]
-    # indices = embedded_text.nonzero().tolist()
-    # indices = list(map(lambda x: x[1], indices))
-    # result = ""
-    # for i in range(len(indices)):
-    #     result += idx_to_char[indices[i]]
     # ========================
     return result
 
@@ -138,7 +132,7 @@ def chars_to_labelled_samples(text: str, char_to_idx: dict, seq_len: int,
     samples = samples.to(device)
 
     labels = torch.argmax(raw_tensor[1:], dim=1)
-    labels = labels[:(n*seq_len)].view(n,seq_len)
+    labels = labels[:(n*seq_len)].view(n, seq_len)
     labels = labels.to(device)
     # ========================
     return samples, labels
@@ -227,8 +221,7 @@ class SequenceBatchSampler(torch.utils.data.Sampler):
         num_of_batches = int(len(self.dataset) / self.batch_size)
         for i in range(num_of_batches):
             for j in range(self.batch_size):
-                idx.append(self.dataset[i+(num_of_batches*j)])
-
+                idx.append(i+(num_of_batches*j))
         # ========================
         return iter(idx)
 
