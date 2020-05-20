@@ -126,7 +126,7 @@ def chars_to_labelled_samples(text: str, char_to_idx: dict, seq_len: int,
     # ====== YOUR CODE: ======
     raw_tensor = chars_to_onehot(text, char_to_idx)
     embedded = raw_tensor[:-1]
-    n = (len(text)-1) // seq_len
+    n = int((len(text)-1) / seq_len)
     v = len(char_to_idx)
     samples = embedded[:(n*seq_len)].view(n,seq_len,v)
     samples = samples.to(device)
@@ -149,7 +149,11 @@ def hot_softmax(y, dim=0, temperature=1.0):
     """
     # TODO: Implement based on the above.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+
+    y_scaled= y / temperature
+    exp = torch.exp(y_scaled)
+    sum = torch.sum(exp, dim=dim)
+    result = exp / sum
     # ========================
     return result
 
@@ -185,7 +189,20 @@ def generate_from_model(model, start_sequence, n_chars, char_maps, T):
     #  necessary for this. Best to disable tracking for speed.
     #  See torch.no_grad().
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    chars_to_add = n_chars - len(start_sequence)
+    hidden_states = None
+    with torch.no_grad():
+        seq_onehot = chars_to_onehot(start_sequence, char_to_idx)
+        seq_onehot = torch.reshape(seq_onehot, (1, seq_onehot.shape[0], seq_onehot.shape[1]))
+        for i in range(chars_to_add):
+            seq_onehot = seq_onehot.to(device, dtype=torch.float)
+            scores, hidden_states = model(seq_onehot, hidden_states)
+            softmax_probs = hot_softmax(scores[:, -1, :], temperature=T)
+            out_text += idx_to_char[torch.multinomial(softmax_probs, 1).item()]
+
+            seq_onehot = chars_to_onehot(out_text[-1], char_to_idx)
+            seq_onehot = torch.reshape(seq_onehot, (1, seq_onehot.shape[0], seq_onehot.shape[1]))
+
     # ========================
 
     return out_text
@@ -267,7 +284,31 @@ class MultilayerGRU(nn.Module):
         #      then call self.register_parameter() on them. Also make
         #      sure to initialize them. See functions in torch.nn.init.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        curr_in_dim = self.in_dim
+
+        for layer in range(self.n_layers):
+            self.layer_params.append(nn.ModuleList([
+                nn.Linear(in_features=curr_in_dim, out_features=self.h_dim,bias=False),  # fc_xz
+                nn.Linear(in_features=self.h_dim, out_features=self.h_dim, bias=True),  # fc_hz
+
+                nn.Linear(in_features=curr_in_dim, out_features=self.h_dim, bias=False),  # fc_xr
+                nn.Linear(in_features=self.h_dim, out_features=self.h_dim, bias=True),  # fc_hr
+
+                nn.Linear(in_features=curr_in_dim, out_features=self.h_dim, bias=False),  # fc_xg
+                nn.Linear(in_features=self.h_dim, out_features=self.h_dim, bias=True),  # fc_hg
+
+                nn.Dropout(dropout)
+            ]))
+            curr_in_dim = self.h_dim
+        self.layer_params.append(nn.ModuleList([
+            nn.Linear(in_features=curr_in_dim, out_features=self.out_dim, bias=True),  # fc_hy
+        ]))
+
+        for idx_l, layer in enumerate(self.layer_params):
+            for idx_m, module in enumerate(layer):
+                # print("Layer_{}_Module_{}".format(idx_l,idx_m))
+                self.add_module("Layer_{}_Module_{}".format(idx_l,idx_m), module=module)
+
         # ========================
 
     def forward(self, input: Tensor, hidden_state: Tensor = None):
@@ -304,6 +345,25 @@ class MultilayerGRU(nn.Module):
         #  Tip: You can use torch.stack() to combine multiple tensors into a
         #  single tensor in a differentiable manner.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        layer_output = torch.zeros_like(layer_input)
+        for char in range(seq_len):
+            x = layer_input[:,char,:]
+
+            for index, (fc_xz, fc_hz, fc_xr, fc_hr, fc_xg, fc_hg, drop) in enumerate(self.layer_params[:-1]):
+                old_h = layer_states[index]
+                z = torch.sigmoid(fc_xz(x)+fc_hz(old_h))
+                r = torch.sigmoid(fc_xr(x) + fc_hr(old_h))
+                g = torch.tanh(fc_xg(x) + fc_hg(r*old_h))
+                h = z*old_h + (1-z)*g
+                x = drop(h)
+                layer_states[index] = h
+
+            fc_hy = self.layer_params[-1][0]
+            y = fc_hy(x)
+            layer_output[:,char,:] = y
+
+        hidden_state = torch.stack(layer_states, dim=1)
+        hidden_state.cpu().detach()
+        layer_output.cpu().detach()
         # ========================
         return layer_output, hidden_state
