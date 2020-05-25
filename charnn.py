@@ -150,10 +150,11 @@ def hot_softmax(y, dim=0, temperature=1.0):
     # TODO: Implement based on the above.
     # ====== YOUR CODE: ======
 
-    y_scaled= y / temperature
-    exp = torch.exp(y_scaled)
-    sum = torch.sum(exp, dim=dim)
-    result = exp / sum
+    # y_scaled= y / temperature
+    # exp = torch.exp(y_scaled)
+    # sum = torch.sum(exp, dim=dim)
+    # result = exp / sum
+    result = nn.functional.softmax(y/temperature, dim=dim)
     # ========================
     return result
 
@@ -197,12 +198,11 @@ def generate_from_model(model, start_sequence, n_chars, char_maps, T):
         for i in range(chars_to_add):
             seq_onehot = seq_onehot.to(device, dtype=torch.float)
             scores, hidden_states = model(seq_onehot, hidden_states)
-            softmax_probs = hot_softmax(scores[:, -1, :], temperature=T)
+            softmax_probs = hot_softmax(scores[0, -1, :], temperature=T)
             out_text += idx_to_char[torch.multinomial(softmax_probs, 1).item()]
 
             seq_onehot = chars_to_onehot(out_text[-1], char_to_idx)
             seq_onehot = torch.reshape(seq_onehot, (1, seq_onehot.shape[0], seq_onehot.shape[1]))
-
     # ========================
 
     return out_text

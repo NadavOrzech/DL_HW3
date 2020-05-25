@@ -235,16 +235,21 @@ class RNNTrainer(Trainer):
         #  - Update params
         #  - Calculate number of correct char predictions
         # ====== YOUR CODE: ======
-        y_pred_log_prob, hidden_states = self.model(x, self.hidden_states)
+        # forward pass
+        y_pred_log_prob, self.hidden_states = self.model(x, self.hidden_states)
+
+        # backward pass
         self.optimizer.zero_grad()
-        print("y_pred: {}".format(torch.transpose(y_pred_log_prob,1,2).shape))
-        print("y:      {}".format(y.shape))
-        loss = self.loss_fn(torch.transpose(y_pred_log_prob,1,2),y)
+        loss = self.loss_fn(torch.transpose(y_pred_log_prob,1,2), y)
         loss.backward()
 
+        # weight updates
         self.optimizer.step()
-        self.hidden_states = hidden_states
+        self.hidden_states = self.hidden_states.detach()
+        # self.hidden_states.detach()
+        self.hidden_states.requires_grad = False
 
+        # calculate accuracy
         y_pred = torch.argmax(torch.transpose(y_pred_log_prob,1,2), dim=1)
         num_correct = torch.sum(y_pred == y)
         # ========================
@@ -266,10 +271,10 @@ class RNNTrainer(Trainer):
             #  - Loss calculation
             #  - Calculate number of correct predictions
             # ====== YOUR CODE: ======
-            y_pred_log_prob, hidden_states = self.model(x, self.hidden_states)
-            loss = self.loss_fn(y_pred_log_prob, y)
+            y_pred_log_prob, self.hidden_states = self.model(x, self.hidden_states)
+            loss = self.loss_fn(torch.transpose(y_pred_log_prob, 1, 2), y)
 
-            y_pred = torch.argmax(y_pred_log_prob, dim=1)
+            y_pred = torch.argmax(torch.transpose(y_pred_log_prob, 1, 2), dim=1)
             num_correct = torch.sum(y_pred == y)
             # ========================
 
