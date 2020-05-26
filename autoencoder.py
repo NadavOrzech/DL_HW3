@@ -84,6 +84,7 @@ class VAE(nn.Module):
         device = next(self.parameters()).device
         self.h_mu = nn.Linear(in_features=n_features, out_features=z_dim,bias=True).to(device=device)
         self.h_sigma2 = nn.Linear(in_features=n_features, out_features=z_dim,bias=True).to(device=device)
+        self.z_h = nn.Linear(in_features=z_dim,out_features=n_features, bias=True).to(device=device)
         # ========================
 
     def _check_features(self, in_size):
@@ -107,7 +108,7 @@ class VAE(nn.Module):
         device = next(self.parameters()).device
         x = x.to(device)
         h = self.features_encoder(x)
-        h=h.view(h.size(0),-1)
+        h = h.view(h.shape[0],-1)
         # print(h.shape)
         mu = self.h_mu(h)
         log_sigma2 = self.h_sigma2(h)
@@ -123,7 +124,9 @@ class VAE(nn.Module):
         #  1. Convert latent z to features h with a linear layer.
         #  2. Apply features decoder.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        h_hat = self.z_h(z)
+        h_hat = h_hat.view(h_hat.shape[0],*self.features_shape)
+        x_rec = self.features_decoder(h_hat)
         # ========================
 
         # Scale to [-1, 1] (same dynamic range as original images).
@@ -142,7 +145,8 @@ class VAE(nn.Module):
             #    Instead of sampling from N(psi(z), sigma2 I), we'll just take
             #    the mean, i.e. psi(z).
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            z_samples = torch.randn(n, self.z_dim)#.to(device=device)
+            samples = self.decode(z_samples)
             # ========================
 
         # Detach and move to CPU for display purposes
@@ -175,7 +179,18 @@ def vae_loss(x, xr, z_mu, z_log_sigma2, x_sigma2):
     #  1. The covariance matrix of the posterior is diagonal.
     #  2. You need to average over the batch dimension.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    n, c, h, w = x.size()
+    dx = n*c*h*w
+    norm = ((x-xr).norm())**2
+    data_loss = norm/(x_sigma2*dx)
+
+    trace = (torch.exp(z_log_sigma2)).sum()
+    norm2 = (z_mu.norm())**2
+    dz = z_mu.shape[1]
+    log_det = z_log_sigma2.sum()
+    kldiv_loss = (trace + norm2 - log_det)/n - dz
+
+    loss = data_loss + kldiv_loss
     # ========================
 
     return loss, data_loss, kldiv_loss
