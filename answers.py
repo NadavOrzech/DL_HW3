@@ -20,9 +20,9 @@ def part1_rnn_hyperparams():
     hypers['seq_len'] = 64
     hypers['h_dim'] = 256
     hypers['n_layers'] = 3
-    hypers['dropout'] = 0.2
+    hypers['dropout'] = 0.4
     hypers['learn_rate'] = 0.001
-    hypers['lr_sched_factor'] = 0.3
+    hypers['lr_sched_factor'] = 0.5
     hypers['lr_sched_patience'] = 3
     # ========================
     return hypers
@@ -133,7 +133,12 @@ def part2_vae_hyperparams():
     )
     # TODO: Tweak the hyperparameters to generate a former president.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    hypers['batch_size'] = 64
+    hypers['h_dim'] = 512
+    hypers['z_dim'] = 4
+    hypers['x_sigma2'] = 0.5
+    hypers['learn_rate'] = 0.001
+    hypers['betas'] = (0.5, 0.999)
     # ========================
     return hypers
 

@@ -19,12 +19,14 @@ class EncoderCNN(nn.Module):
         #  use pooling or only strides, use any activation functions,
         #  use BN or Dropout, etc.
         # ====== YOUR CODE: ======
-        channels = [64, 128, 256, out_channels]
+        channels = [64, 128, 256]
         for ch in channels:
             modules.append(nn.Conv2d(in_channels=in_channels, out_channels=ch, kernel_size=5, padding=2, stride=2))
             modules.append(nn.BatchNorm2d(num_features=ch))
             modules.append(nn.ReLU())
             in_channels = ch
+        modules.append(nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=5, padding=2, stride=2))
+        modules.append(nn.BatchNorm2d(num_features=out_channels))
         # ========================
         self.cnn = nn.Sequential(*modules)
 
@@ -47,13 +49,16 @@ class DecoderCNN(nn.Module):
         #  output should be a batch of images, with same dimensions as the
         #  inputs to the Encoder were.
         # ====== YOUR CODE: ======
-        channels = [256, 128, 64, out_channels]
+        channels = [256, 128, 64]
         for ch in channels:
             modules.append(nn.ConvTranspose2d(in_channels=in_channels, out_channels=ch, kernel_size=5,
                                               padding=2, stride=2, output_padding=1))
             modules.append(nn.BatchNorm2d(num_features=ch))
             modules.append(nn.ReLU())
             in_channels = ch
+        modules.append(nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels, kernel_size=5,
+                                          padding=2, stride=2, output_padding=1))
+        modules.append(nn.BatchNorm2d(num_features=out_channels))
         # ========================
         self.cnn = nn.Sequential(*modules)
 
@@ -112,7 +117,9 @@ class VAE(nn.Module):
         # print(h.shape)
         mu = self.h_mu(h)
         log_sigma2 = self.h_sigma2(h)
-        u = torch.randn(size=mu.shape)
+        u = (torch.randn(size=mu.shape)).to(device)
+        mu = mu.to(device)
+        log_sigma2 = log_sigma2.to(device)
         z = mu + u*torch.exp(log_sigma2)
         # ========================
 
@@ -145,7 +152,7 @@ class VAE(nn.Module):
             #    Instead of sampling from N(psi(z), sigma2 I), we'll just take
             #    the mean, i.e. psi(z).
             # ====== YOUR CODE: ======
-            z_samples = torch.randn(n, self.z_dim)#.to(device=device)
+            z_samples = torch.randn(n, self.z_dim).to(device=device)
             samples = self.decode(z_samples)
             # ========================
 
