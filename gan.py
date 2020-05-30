@@ -3,6 +3,8 @@ from typing import Callable
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import os
+from pathlib import Path
 
 from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
@@ -106,11 +108,9 @@ class Generator(nn.Module):
         #  Don't use a loop.
         # ====== YOUR CODE: ======
         torch.autograd.set_grad_enabled(with_grad)
-
         z = torch.randn((n, self.z_dim), device=device, requires_grad=with_grad)
         samples = self.forward(z)
         torch.autograd.set_grad_enabled(True)
-
         # ========================
         return samples
 
@@ -200,7 +200,16 @@ def train_batch(dsc_model: Discriminator, gen_model: Generator,
     #  2. Calculate discriminator loss
     #  3. Update discriminator parameters
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    dsc_optimizer.zero_grad()
+    sample = gen_model.sample(x_data.shape[0], False)
+
+    y_data = dsc_model(x_data)
+    y_generated = dsc_model(sample)
+
+    dsc_loss = dsc_loss_fn(y_data, y_generated)
+    dsc_loss.backward()
+
+    dsc_optimizer.step()
     # ========================
 
     # TODO: Generator update
@@ -208,7 +217,15 @@ def train_batch(dsc_model: Discriminator, gen_model: Generator,
     #  2. Calculate generator loss
     #  3. Update generator parameters
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    gen_optimizer.zero_grad()
+    x_generated = gen_model.sample(x_data.shape[0], True)
+
+    y_gen = dsc_model(x_generated)
+
+    gen_loss = gen_loss_fn(y_gen)
+    gen_loss.backward()
+
+    gen_optimizer.step()
     # ========================
 
     return dsc_loss.item(), gen_loss.item()
@@ -231,7 +248,12 @@ def save_checkpoint(gen_model, dsc_losses, gen_losses, checkpoint_file):
     #  You should decide what logic to use for deciding when to save.
     #  If you save, set saved to True.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    if checkpoint_file is not None:
+        if len(gen_losses) <= 3 or (gen_losses[-1] <= min(gen_losses[-3:-1]) and dsc_losses[-1] <= min(dsc_losses[-3:-1])):
+            # saved_state = gen_model.state_dict()
+            torch.save(gen_model, checkpoint_file)
+            print(f'*** Saved checkpoint {checkpoint_file}')
+            saved = True
     # ========================
 
     return saved

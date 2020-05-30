@@ -26,7 +26,7 @@ class EncoderCNN(nn.Module):
             modules.append(nn.ReLU())
             in_channels = ch
         modules.append(nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=5, padding=2, stride=2))
-        modules.append(nn.BatchNorm2d(num_features=out_channels))
+        # modules.append(nn.BatchNorm2d(num_features=out_channels))
         # ========================
         self.cnn = nn.Sequential(*modules)
 
@@ -58,7 +58,7 @@ class DecoderCNN(nn.Module):
             in_channels = ch
         modules.append(nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels, kernel_size=5,
                                           padding=2, stride=2, output_padding=1))
-        modules.append(nn.BatchNorm2d(num_features=out_channels))
+        # modules.append(nn.BatchNorm2d(num_features=out_channels))
         # ========================
         self.cnn = nn.Sequential(*modules)
 

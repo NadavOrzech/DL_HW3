@@ -33,7 +33,8 @@ def part1_generation_params():
     temperature = .0001
     # TODO: Tweak the parameters to generate a literary masterpiece.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    start_seq = "ACT I."
+    temperature = 0.4
     # ========================
     return start_seq, temperature
 
@@ -134,17 +135,21 @@ def part2_vae_hyperparams():
     # TODO: Tweak the hyperparameters to generate a former president.
     # ====== YOUR CODE: ======
     hypers['batch_size'] = 64
-    hypers['h_dim'] = 512
-    hypers['z_dim'] = 4
-    hypers['x_sigma2'] = 0.5
-    hypers['learn_rate'] = 0.001
+    hypers['h_dim'] = 32
+    hypers['z_dim'] = 10
+    hypers['x_sigma2'] = 0.005
+    hypers['learn_rate'] = 0.002
     hypers['betas'] = (0.5, 0.999)
     # ========================
     return hypers
 
 
 part2_q1 = r"""
-**Your answer:**
+**Your answer:
+The $sigma^2$ parameter is the standard deviation of $P(X|Z)$ meaning it allows us to control the relative influence of
+the data loss. When using a small STDV we force our model to generate samples that are similar to the original data set
+because the relative contribution of the data loss is high. When using a high STDV we allow a wider range of images to 
+be generated meaning that we generate new samples but still with the same characteristics as the original data set.**
 
 
 Write your answer using **markdown** and $\LaTeX$:
@@ -157,8 +162,20 @@ An equation: $e^{i\pi} -1 = 0$
 """
 
 part2_q2 = r"""
-**Your answer:**
+**Your answer:
+1. The reconstruction loss is the distance between the original image and the generated image (point wise loss), thus
+it controls the probability that the model will generate an image that is similar to the original data set.
+The KL divergence loss is the distance between the posterior distribution and the prior distribution, meaning this loss
+part ensures that the encoder's approximation of the latent space (i.e the posterior distribution) is
+normally distributed (like the prior distribution).
 
+2. By minimizing the VAE loss term and by extent the KL divergence loss, we try to get the posterior distribution as 
+close as possible to the prior distribution. Meaning that we work to change the encoders approximation of the latent 
+space distribution to be normally distributed.
+
+3. As we saw in the lecture choosing $z$ from the latent space based on the model parameters is not possible. So in
+order to sample $z$ we need the latent space to be normally distributed using the reparametrization trick.
+**
 
 Write your answer using **markdown** and $\LaTeX$:
 ```python
@@ -194,13 +211,30 @@ def part3_gan_hyperparams():
     )
     # TODO: Tweak the hyperparameters to train your GAN.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    hypers['batch_size'] = 32
+    hypers['z_dim'] = 128
+    hypers['data_label'] = 1
+    hypers['label_noise'] = 0.2
+    hypers['discriminator_optimizer']['lr'] = 0.0002
+    hypers['discriminator_optimizer']['type'] = 'Adam'
+    hypers['discriminator_optimizer']['weight_decay'] = 0.02
+    hypers['discriminator_optimizer']['betas'] = (0.5, 0.999)
+    hypers['generator_optimizer']['lr'] = 0.0002
+    hypers['generator_optimizer']['type'] = 'Adam'
+    hypers['generator_optimizer']['weight_decay'] = 0.02
+    hypers['generator_optimizer']['betas'] = (0.5, 0.999)
     # ========================
     return hypers
 
 
 part3_q1 = r"""
-**Your answer:**
+**Your answer:
+During the training of the GAN model we want to maintain the gradient only when we train the generator, and not when we
+train the discriminator. This is because when we train the generator we want it to improve based on the samples it
+generates and it's gradients. On the other hand the gradients of the samples don't affect the training of the 
+discriminator thus we prefer to discard the gradinets for this part of the training process and as a result improve
+computation time of the training. So when we sample for the generator we sample with autograd as opposed to when we 
+sample for the discriminator.**
 
 
 Write your answer using **markdown** and $\LaTeX$:
@@ -213,7 +247,16 @@ An equation: $e^{i\pi} -1 = 0$
 """
 
 part3_q2 = r"""
-**Your answer:**
+**Your answer:
+1. No, we should not stop training solely base on the Generator loss being below a certain threshold. In the training 
+the generator and discriminator losses affect each other, for example if we have a bad discriminator the generator will
+be able deceive the discriminator even if the generator is bad himself. In this case the generator loss will be low, we
+would stop the training but the generated images would not be accurate enough.
+
+2. If the generator loss is decreasing it means it is getting better at producing generated images close to the real 
+data set. Although the discriminator loss remains at a constant value, it is also improving because it is still able
+to produce the same results with better generated images.  
+**
 
 
 Write your answer using **markdown** and $\LaTeX$:
@@ -226,7 +269,10 @@ An equation: $e^{i\pi} -1 = 0$
 """
 
 part3_q3 = r"""
-**Your answer:**
+Compare the results you got when generating images with the VAE to the GAN results. What's the main difference and 
+what's causing it?
+**Your answer:
+**
 
 
 Write your answer using **markdown** and $\LaTeX$:
