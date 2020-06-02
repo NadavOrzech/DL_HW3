@@ -272,6 +272,17 @@ part3_q3 = r"""
 Compare the results you got when generating images with the VAE to the GAN results. What's the main difference and 
 what's causing it?
 **Your answer:
+We can see from the results of our two models that the VAE generates images that are blurry on the edges but the face in
+the middle of the image is clear and the overall images is smooth. On the other hand the GAN generates images that have 
+a more defined background, but the overall image is less smooth and has more contrast between adjacent pixels. 
+For example the GAN model produces images that show the US flag like in the background as opposed to the VAE model that 
+produces images with grayscale background only.
+
+This difference can be explained through the nature of the loss function of each model. The VAE aimes to minimize the 
+loss by making the generated image after the "dimension reduction" similar to the original image. This is done by trying
+to preserve the features of the main object in the image. On the other hand the GAN loss function expresses the process 
+of the generator trying to deceive the discriminator by producing an image similar to a real image. 
+
 **
 
 
